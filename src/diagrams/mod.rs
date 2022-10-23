@@ -1,3 +1,3 @@
-mod flowchart;
+pub mod flowchart;
 
 pub use flowchart::Flowchart;
