@@ -1,5 +1,4 @@
 mod diagrams;
-pub mod draw;
+pub mod style;
 
 pub use diagrams::*;
-pub use draw::Drawer;
