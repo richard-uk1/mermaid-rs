@@ -8,6 +8,8 @@ use std::{fmt, fs, io, path::Path};
 mod parse;
 mod render;
 
+pub use parse::{Error, ErrorKind};
+
 /// The default style used with [`Pie::render`].
 pub static DEFAULT_STYLE: Lazy<PieStyle> = Lazy::new(PieStyle::default);
 pub static DARK_STYLE: Lazy<PieStyle> = Lazy::new(PieStyle::default_dark);
@@ -20,8 +22,8 @@ pub struct Pie<'input> {
 }
 
 impl<'input> Pie<'input> {
-    pub fn parse(src: &'input str) -> Result<Self> {
-        let (_, pie) = parse::parse_pie(src.trim()).finish().unwrap();
+    pub fn parse(src: &'input str) -> Result<Self, Error> {
+        let (_, pie) = parse::parse_pie(src).finish()?;
         Ok(pie)
     }
 

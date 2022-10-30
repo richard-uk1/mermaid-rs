@@ -1,7 +1,7 @@
 use mermaid::{pie, Pie};
 
 fn main() {
-    let chart = Pie::parse(
+    let chart = match Pie::parse(
         r#"
 pie showData
     title Key elements in Product X
@@ -10,8 +10,13 @@ pie showData
     "Magnesium" : 10.01
     "Iron" :  5
     "#,
-    )
-    .unwrap();
+    ) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
+        }
+    };
     let mut style = (*pie::DEFAULT_STYLE).clone();
     style.background_color = piet::Color::WHITE;
     println!("{:#?}", chart);
