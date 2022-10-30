@@ -7,8 +7,11 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.65"
+dyn-clone = "1.0.9"
 kurbo = "0.8.3"
 nom = "7.1.1"
+nom_locate = "4.0.0"
+once_cell = "1.16.0"
 petgraph = "0.6.2"
 #piet = { git = "https://github.com/linebender/piet" }
 piet = { path = "../../contrib/piet/piet" }

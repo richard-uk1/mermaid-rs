@@ -1,4 +1,4 @@
-use mermaid::Pie;
+use mermaid::{pie, Pie};
 
 fn main() {
     let chart = Pie::parse(
@@ -12,7 +12,9 @@ pie showData
     "#,
     )
     .unwrap();
+    let mut style = (*pie::DEFAULT_STYLE).clone();
+    style.background_color = piet::Color::WHITE;
     println!("{:#?}", chart);
-    chart.to_svg_file("output.svg").unwrap();
-    chart.to_png_file("output.png").unwrap();
+    chart.to_svg_file("output.svg", Some(&style)).unwrap();
+    chart.to_png_file("output.png", 4., Some(&style)).unwrap();
 }

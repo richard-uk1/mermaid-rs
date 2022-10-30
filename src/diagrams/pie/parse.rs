@@ -6,6 +6,9 @@ use nom::{
     multi::many1,
     IResult,
 };
+use nom_locate::LocatedSpan;
+
+type Span<'input> = LocatedSpan<&'input str>;
 
 // input is expected to be pre-trimmed
 pub fn parse_pie(i: &str) -> IResult<&str, Pie<'_>> {
