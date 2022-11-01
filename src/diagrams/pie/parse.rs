@@ -1,12 +1,17 @@
 use super::{Datum, Pie};
 use nom::{bytes::complete::take_until, character::complete::multispace0};
 use nom_locate::LocatedSpan;
-use std::fmt;
+use std::{fmt, num::ParseFloatError};
 
+/// If parsing failed, this type contains a description of the reason for the failure and the
+/// location failure occurred at.
 #[derive(Debug)]
 pub struct Error {
+    /// (1-indexed) line number of the error.
     pub line: u32,
+    /// (1-indexed) column number of the error.
     pub col: usize,
+    /// (0-indexed) offset in the input string of the error.
     pub offset: usize,
     kind: ErrorKind,
 }
@@ -20,6 +25,11 @@ impl Error {
             kind,
         }
     }
+
+    /// Get a description of the failure.
+    pub fn kind(&self) -> &ErrorKind {
+        &self.kind
+    }
 }
 
 impl fmt::Display for Error {
@@ -27,13 +37,24 @@ impl fmt::Display for Error {
         write!(f, "on line {}, col {}: {}", self.line, self.col, self.kind)
     }
 }
+impl std::error::Error for Error {}
 
+/// Different types of parsing errors for the pie chart.
 #[derive(Debug)]
 pub enum ErrorKind {
+    /// Expected a particular text string at the given location.
     ExpectedLiteral(&'static str),
-    ExpectedFloat(Option<String>),
+    /// Expected a number at the given location.
+    ///
+    /// If the inner value is `Some`, then the input did look like a number, but there was some
+    /// problem when actually parsing it.
+    ExpectedFloat(Option<ParseFloatError>),
+    /// Found an opening quote but no corresponding closing quote.
     UnclosedQuote(&'static str),
+    /// Expected to find a particular string at some point between the given point and the end of
+    /// the input.
     SearchLiteral(&'static str),
+    /// Expected to be at the end of the input, but found some more input.
     UnexpectedTrailing,
 }
 
@@ -142,7 +163,7 @@ fn float(i: Span) -> IResult<f64> {
     match num.parse::<f64>() {
         Ok(v) => Ok((i, v)),
         Err(e) => {
-            let kind = ErrorKind::ExpectedFloat(Some(e.to_string()));
+            let kind = ErrorKind::ExpectedFloat(Some(e));
             Err(nom::Err::Error(Error::new(&num, kind)))
         }
     }

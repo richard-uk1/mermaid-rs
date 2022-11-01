@@ -1,3 +1,6 @@
+//! Types and functions for creating pie charts.
+
+use crate::style::{ColorPalette, DefaultPalette, StrokeStyle, TextStyle};
 use anyhow::Result;
 use kurbo::Size;
 use nom::Finish;
@@ -12,25 +15,36 @@ pub use parse::{Error, ErrorKind};
 
 /// The default style used with [`Pie::render`].
 pub static DEFAULT_STYLE: Lazy<PieStyle> = Lazy::new(PieStyle::default);
+/// A default style for use with dark themes.
 pub static DARK_STYLE: Lazy<PieStyle> = Lazy::new(PieStyle::default_dark);
 
+/// A parsed pie chart.
 #[derive(Debug)]
 pub struct Pie<'input> {
+    /// A title to display above the chart.
+    ///
+    /// If `Some("")` then space will be left for a title, wherease if `None`, then no space will
+    /// be taken.
     pub title: Option<&'input str>,
+    /// Whether to show the values of the data in the legend.
     pub show_data: bool,
+    /// The data to chart.
     pub data: Vec<Datum<'input>>,
 }
 
 impl<'input> Pie<'input> {
+    /// Parse a chart description.
     pub fn parse(src: &'input str) -> Result<Self, Error> {
         let (_, pie) = parse::parse_pie(src).finish()?;
         Ok(pie)
     }
 
+    /// Use a [`piet::RenderContext`] to render this chart.
     pub fn render<RC: RenderContext>(&self, ctx: &mut RC) -> Result<(), piet::Error> {
         self.render_with_style(&DEFAULT_STYLE, ctx)
     }
 
+    /// Like [`Pie::render`] but allows specifying a custom style.
     pub fn render_with_style<RC: RenderContext>(
         &self,
         style: &PieStyle,
@@ -39,6 +53,7 @@ impl<'input> Pie<'input> {
         render::render(self, style, ctx)
     }
 
+    /// Write out an svg image to `writer`, with optional custom styling.
     pub fn to_svg(&self, writer: impl io::Write, style: Option<&PieStyle>) -> io::Result<()> {
         let mut rc = piet_svg::RenderContext::new(Size::new(800., 800.));
         if let Some(style) = style {
@@ -49,6 +64,7 @@ impl<'input> Pie<'input> {
         rc.write(writer)
     }
 
+    /// Write out an svg image to a file at `filename`, with optional custom styling.
     pub fn to_svg_file(
         &self,
         filename: impl AsRef<Path>,
@@ -59,6 +75,10 @@ impl<'input> Pie<'input> {
         Ok(())
     }
 
+    /// Write out a png image to a file at `filename`, with optional custom styling.
+    ///
+    /// `px_scale` allows for rendering at a larger scale, either for extra zoom or for high DPI
+    /// screens.
     pub fn to_png_file(
         &self,
         filename: impl AsRef<Path>,
@@ -82,21 +102,34 @@ impl<'input> Pie<'input> {
     }
 }
 
+/// A numeric data point in the pie chart.
 #[derive(Debug)]
 pub struct Datum<'input> {
+    /// What to label this data point in the legend.
     pub label: &'input str,
+    /// The data value.
     pub value: f64,
 }
 
+/// Styling for the pie chart.
 #[derive(Clone)]
 pub struct PieStyle {
+    /// What color to clear the background with.
+    ///
+    /// The default is transparent.
     pub background_color: Color,
+    /// How to style the title text.
     pub title: TextStyle,
-    pub segment_outline_color: Color,
-    pub segment_outline_thickness: f64,
+    /// How to style the outline of pie segments.
+    pub segment_outline: StrokeStyle,
+    /// How to choose the color of each pie segment.
     pub segment_colors: Box<dyn ColorPalette + Send + Sync>,
-    // if `None` labels will not be drawn
+    /// How to style segment labels (showing the percentage of the total a particular segment takes
+    /// up).
+    ///
+    /// If this is `None` then labels will not be drawn.
     pub segment_label: Option<TextStyle>,
+    /// How to style the labels for each data point in the legend.
     pub legend_label: TextStyle,
 }
 
@@ -105,8 +138,7 @@ impl fmt::Debug for PieStyle {
         f.debug_struct("PieStyle")
             .field("background_color", &self.background_color)
             .field("title", &self.title)
-            .field("segment_outline_color", &self.segment_outline_color)
-            .field("segment_outline_thickness", &self.segment_outline_thickness)
+            .field("segment_outline", &self.segment_outline)
             .field("segment_colors", &"dyn ColorPalette")
             .field("segment_label", &self.segment_label)
             .field("legend_label", &self.legend_label)
@@ -119,8 +151,7 @@ impl PieStyle {
         Self {
             background_color: Color::TRANSPARENT,
             title: TextStyle::default().with_bold(true),
-            segment_outline_color: Color::BLACK,
-            segment_outline_thickness: 1.5,
+            segment_outline: StrokeStyle::new(1.5, Color::BLACK),
             segment_colors: Box::new(DefaultPalette),
             segment_label: Some(TextStyle::default_dark().with_font_size(12.)),
             legend_label: TextStyle::default(),
@@ -131,56 +162,5 @@ impl PieStyle {
         this.title = TextStyle::default_dark().with_bold(true);
         this.legend_label = TextStyle::default_dark();
         this
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TextStyle {
-    pub color: Color,
-    pub font_size: f64,
-    pub bold: bool,
-}
-
-impl TextStyle {
-    fn default() -> Self {
-        Self {
-            color: Color::BLACK,
-            font_size: 16.,
-            bold: false,
-        }
-    }
-
-    fn default_dark() -> Self {
-        Self {
-            color: Color::WHITE,
-            font_size: 16.,
-            bold: false,
-        }
-    }
-
-    fn with_font_size(mut self, font_size: f64) -> Self {
-        self.font_size = font_size;
-        self
-    }
-
-    fn with_bold(mut self, bold: bool) -> Self {
-        self.bold = bold;
-        self
-    }
-}
-
-pub trait ColorPalette: dyn_clone::DynClone {
-    /// This function is expected to give the same answer for the same input (i.e. be a pure fn).
-    fn color(&self, index: usize) -> piet::Color;
-}
-
-dyn_clone::clone_trait_object!(ColorPalette);
-
-#[derive(Copy, Clone)]
-pub struct DefaultPalette;
-impl ColorPalette for DefaultPalette {
-    fn color(&self, index: usize) -> piet::Color {
-        let hue = (index as f64 * 140.).rem_euclid(360.);
-        piet::Color::hlc(hue, 40., 40.)
     }
 }

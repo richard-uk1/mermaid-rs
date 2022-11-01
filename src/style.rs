@@ -1,26 +1,80 @@
+//! Some shared code to support styling charts.
+use piet::Color;
+
+/// How to style drawing the outline of a shape.
 #[derive(Debug, Clone)]
-pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
+pub struct StrokeStyle {
+    /// The width of the outline.
+    pub width: f64,
+    /// The color of the outline.
+    pub color: Color,
+    // todo dashing/linecap/etc
 }
 
-impl Color {
-    pub fn rgba(r: f64, g: f64, b: f64, a: f64) -> Self {
+impl StrokeStyle {
+    /// Helper to create a stroke style.
+    pub fn new(width: f64, color: Color) -> Self {
+        Self { width, color }
+    }
+}
+
+/// How to style some text.
+#[derive(Debug, Clone)]
+pub struct TextStyle {
+    /// The text color.
+    pub color: Color,
+    /// The font height to use.
+    pub font_size: f64,
+    /// Whether text should be bold.
+    pub bold: bool,
+}
+
+impl TextStyle {
+    pub(crate) fn default() -> Self {
         Self {
-            r: (r.clamp(0.0, 1.0) * 255.) as u8,
-            g: (g.clamp(0.0, 1.0) * 255.) as u8,
-            b: (b.clamp(0.0, 1.0) * 255.) as u8,
-            a: (a.clamp(0.0, 1.0) * 255.) as u8,
+            color: Color::BLACK,
+            font_size: 16.,
+            bold: false,
         }
     }
 
-    pub fn rgb(r: f64, g: f64, b: f64) -> Self {
-        Self::rgba(r, g, b, 1.)
+    pub(crate) fn default_dark() -> Self {
+        Self {
+            color: Color::WHITE,
+            font_size: 16.,
+            bold: false,
+        }
     }
 
-    pub(crate) fn to_piet_color(&self) -> piet::Color {
-        piet::Color::rgba8(self.r, self.g, self.b, self.a)
+    /// Set whether the text font height.
+    pub fn with_font_size(mut self, font_size: f64) -> Self {
+        self.font_size = font_size;
+        self
+    }
+
+    /// Set whether the text should be bold.
+    pub fn with_bold(mut self, bold: bool) -> Self {
+        self.bold = bold;
+        self
+    }
+}
+
+/// A tpye that knows how to select colors for different data in a chart.
+pub trait ColorPalette: dyn_clone::DynClone {
+    /// Given the index of the data point, select a base color to use.
+    ///
+    /// This function is expected to give the same answer for the same input (i.e. be a pure fn).
+    fn color(&self, index: usize) -> piet::Color;
+}
+
+dyn_clone::clone_trait_object!(ColorPalette);
+
+/// A default color palette for choosing contrasting colors for a chart.
+#[derive(Copy, Clone)]
+pub struct DefaultPalette;
+impl ColorPalette for DefaultPalette {
+    fn color(&self, index: usize) -> piet::Color {
+        let hue = (index as f64 * 140.).rem_euclid(360.);
+        piet::Color::hlc(hue, 40., 40.)
     }
 }

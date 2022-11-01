@@ -31,7 +31,7 @@ pub fn render<RC: RenderContext>(
     let legend = Legend::build(chart, style, ctx)?;
 
     // build brushes
-    let stroke_brush = ctx.solid_brush(style.segment_outline_color);
+    let stroke_brush = ctx.solid_brush(style.segment_outline.color);
     let color_brushes = (0..chart.data.len())
         .map(|idx| {
             let color = style.segment_colors.color(idx);
@@ -97,7 +97,7 @@ fn draw_pie<RC: RenderContext>(
             sweep_angle: segment_sweep,
         };
         ctx.fill(&segment, brush);
-        ctx.stroke(&segment, stroke_brush, style.segment_outline_thickness);
+        ctx.stroke(&segment, stroke_brush, style.segment_outline.width);
 
         if let Some(ref label_style) = style.segment_label {
             // layout label
