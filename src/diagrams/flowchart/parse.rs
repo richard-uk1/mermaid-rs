@@ -150,23 +150,31 @@ fn node(i: &str) -> IResult<&str, Node> {
     let (i, id) = ident(i)?;
     let (i, _) = ws(i)?;
     let (i, style_start) = opt(node_style_start)(i)?;
-    match style_start {
-        Some(style_start) => {
-            let (i, label) = node_label(i)?;
-            let (i, style_end) = node_style_end(i)?;
-            let style = node_style(style_start, style_end)
-                .expect("TODO error handling - node style start/end don't match");
-            Ok((i, Node { id, label, style }))
+    let style_start = match style_start {
+        Some(v) => v,
+        None => {
+            return Ok((
+                i,
+                Node {
+                    id,
+                    label: "",
+                    style: NodeStyle::Square,
+                },
+            ))
         }
-        None => Ok((
-            i,
-            Node {
-                id,
-                label: "",
-                style: NodeStyle::Square,
-            },
-        )),
-    }
+    };
+    let (i, _) = ws(i)?;
+    let (i, label, style) = if matches!(i.chars().next(), Some('"')) {
+        // quoted label
+        let (i, label) = node_label_quoted(i)?;
+        let (i, _) = ws(i)?;
+        let (i, style) = node_style_end(style_start)(i)?;
+        (i, label, style)
+    } else {
+        let (i, (label, style)) = node_label_unquoted(style_start, i)?;
+        (i, label, style)
+    };
+    Ok((i, Node { id, label, style }))
 }
 
 fn node_style_start(i: &str) -> IResult<&str, &str> {
@@ -187,30 +195,48 @@ fn node_style_start(i: &str) -> IResult<&str, &str> {
     ))(i)
 }
 
-fn node_style_end(i: &str) -> IResult<&str, &str> {
+fn node_style_end<'a>(start: &str) -> impl FnMut(&'a str) -> IResult<&'a str, NodeStyle> {
     // TODO check order (longer before shorter)
-    alt((
-        tag(")))"),
-        tag("])"),
-        tag("]]"),
-        tag(")]"),
-        tag("))"),
-        tag("}}"),
-        tag("/]"),
-        tag(r"\]"),
-        tag("]"),
-        tag(")"),
-        tag("]"),
-        tag("}"),
-    ))(i)
+    match start {
+        "[" => match_end_tester(&[("]", NodeStyle::Square)]),
+        "(" => match_end_tester(&[(")", NodeStyle::Round)]),
+        "([" => match_end_tester(&[("])", NodeStyle::Stadium)]),
+        "[[" => match_end_tester(&[("]]", NodeStyle::Subroutine)]),
+        "[(" => match_end_tester(&[(")]", NodeStyle::Cylinder)]),
+        "((" => match_end_tester(&[("))", NodeStyle::Circle)]),
+        ">" => match_end_tester(&[("]", NodeStyle::Asymmetric)]),
+        "{" => match_end_tester(&[("}", NodeStyle::Rhombus)]),
+        "{{" => match_end_tester(&[("}}", NodeStyle::Hexagon)]),
+        "[/" => match_end_tester(&[
+            ("/]", NodeStyle::Parallelogram),
+            ("\\]", NodeStyle::Trapezoid),
+        ]),
+        "[\\" => match_end_tester(&[
+            ("\\]", NodeStyle::ParallelogramRev),
+            ("/]", NodeStyle::TrapezoidRev),
+        ]),
+        "(((" => match_end_tester(&[(")))", NodeStyle::DoubleCircle)]),
+        _ => unreachable!(),
+    }
 }
 
-fn node_label(i: &str) -> IResult<&str, &str> {
-    alt((node_label_quoted, node_label_unquoted))(i)
+fn match_end_tester<'a>(
+    tests: &'static [(&'static str, NodeStyle)],
+) -> impl Fn(&'a str) -> IResult<&'a str, NodeStyle> {
+    move |input| {
+        for (test, style) in tests {
+            if input.starts_with(test) {
+                return Ok((&input[test.len()..], *style));
+            }
+        }
+        Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Tag,
+        )))
+    }
 }
 
 fn node_label_quoted(i: &str) -> IResult<&str, &str> {
-    let (i, _) = ws(i)?;
     let (i, _) = tag("\"")(i)?;
     let mut iter = i.splitn(2, '"');
     let inner = iter.next().expect("unreachable");
@@ -218,48 +244,14 @@ fn node_label_quoted(i: &str) -> IResult<&str, &str> {
     Ok((i, inner))
 }
 
-fn node_label_unquoted(i: &str) -> IResult<&str, &str> {
+fn node_label_unquoted<'input>(
+    style_start: &str,
+    i: &'input str,
+) -> IResult<&'input str, (&'input str, NodeStyle)> {
     // I haven't done this using nom because honestly I don't know how to (without allocating a vec
     // using many0)
-
-    fn node_style_ch(ch: char) -> bool {
-        matches!(ch, ')' | ']' | '}' | '/' | '\\')
-    }
-
-    let mut iter = i.char_indices();
-    let mut idx;
-    loop {
-        let (index, ch) = match iter.next() {
-            Some(v) => v,
-            None => todo!("TODO error handling - unclosed node"),
-        };
-        idx = index;
-        if node_style_ch(ch) {
-            break;
-        }
-    }
-    Ok((&i[idx..], &i[..idx]))
-}
-
-/// Takes the start and end tags for a node and returns the style, if a matching one exists.
-fn node_style(start: &str, end: &str) -> Option<NodeStyle> {
-    Some(match (start, end) {
-        ("[", "]") => NodeStyle::Square,
-        ("(", ")") => NodeStyle::Round,
-        ("([", "])") => NodeStyle::Stadium,
-        ("[[", "]]") => NodeStyle::Subroutine,
-        ("[(", ")]") => NodeStyle::Cylinder,
-        ("((", "))") => NodeStyle::Circle,
-        (">", "]") => NodeStyle::Asymmetric,
-        ("{", "}") => NodeStyle::Rhombus,
-        ("{{", "}}") => NodeStyle::Hexagon,
-        ("[/", "/]") => NodeStyle::Parallelogram,
-        ("[\\", "\\]") => NodeStyle::ParallelogramRev,
-        ("[/", "\\]") => NodeStyle::Trapezoid,
-        ("[\\", "/]") => NodeStyle::TrapezoidRev,
-        ("(((", ")))") => NodeStyle::DoubleCircle,
-        _ => return None,
-    })
+    let end_test = node_style_end(style_start);
+    input_until(end_test)(i)
 }
 
 fn connector(i: &str) -> IResult<&str, Connector> {
@@ -389,5 +381,29 @@ impl LineTy {
         self.ty
             .take()
             .ok_or_else(|| anyhow!("line style was never set"))
+    }
+}
+
+/// Keep trying `p` until we get a match, then return all the input before the match and the result
+/// of the parse.
+fn input_until<I: nom::InputLength + nom::InputTake, O, E>(
+    mut p: impl nom::Parser<I, O, E>,
+) -> impl FnMut(I) -> IResult<I, (I, O), E>
+where
+    I: nom::InputLength + nom::InputTake,
+    E: nom::error::ParseError<I>,
+{
+    move |i| {
+        let input_len = i.input_len();
+        for offset in 0..input_len {
+            let (i, taken) = i.take_split(offset);
+            if let Ok((i, res)) = p.parse(i) {
+                return Ok((i, (taken, res)));
+            }
+        }
+        Err(nom::Err::Error(E::from_error_kind(
+            i,
+            nom::error::ErrorKind::TakeUntil,
+        )))
     }
 }

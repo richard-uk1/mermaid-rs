@@ -4,7 +4,7 @@ fn main() {
     let chart = Flowchart::parse(
         r#"
         flowchart TB
-            A[[ Some "inner quotes" text ]] ----> C & D === B[ "quoted )) text"]
+            A[[ Some "inner quotes" text ])]] ----> C & D === B[ "quoted )) text"]
             B <=x C
     "#,
     )

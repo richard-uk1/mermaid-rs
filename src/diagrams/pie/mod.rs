@@ -22,10 +22,7 @@ pub static DARK_STYLE: Lazy<PieStyle> = Lazy::new(PieStyle::default_dark);
 #[derive(Debug)]
 pub struct Pie<'input> {
     /// A title to display above the chart.
-    ///
-    /// If `Some("")` then space will be left for a title, wherease if `None`, then no space will
-    /// be taken.
-    pub title: Option<&'input str>,
+    pub title: &'input str,
     /// Whether to show the values of the data in the legend.
     pub show_data: bool,
     /// The data to chart.

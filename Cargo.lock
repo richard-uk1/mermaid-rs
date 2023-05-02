@@ -9,6 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "aho-corasick"
+version = "0.7.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4f55bd91a0978cbfd91c457a164bab8b4001c833b7f323132c0a4e1922dd44e"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -58,9 +67,9 @@ checksum = "2c676a478f63e9fa2dd5368a42f28bba0d6c560b775f38583c8bbaa7fcd67c9c"
 
 [[package]]
 name = "bytemuck"
-version = "1.12.1"
+version = "1.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f5715e491b5a1598fc2bef5a606847b5dc1d48ea625bd3c02c00de8285591da"
+checksum = "5aec14f5d4e6e3f927cd0c81f72e5710d95ee9019fbeb4b3021193867491bfd8"
 
 [[package]]
 name = "byteorder"
@@ -94,9 +103,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.73"
+version = "1.0.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
+checksum = "581f5dba903aac52ea3feb5ec4810848460ee833876f1f9b0fdeab1f19091574"
 
 [[package]]
 name = "cfg-expr"
@@ -115,9 +124,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cmake"
-version = "0.1.48"
+version = "0.1.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8ad8cef104ac57b68b89df3208164d228503abbdce70f6880ffa3d970e7443a"
+checksum = "db34956e100b30725f2eb215f90d4871051239535632f84fea3bc92722c66b7c"
 dependencies = [
  "cc",
 ]
@@ -252,7 +261,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f82b0f4c27ad9f8bfd1f3208d882da2b09c301bc1c828fd3a00d0216d2fbbff6"
 dependencies = [
  "crc32fast",
- "miniz_oxide",
+ "miniz_oxide 0.5.4",
 ]
 
 [[package]]
@@ -489,6 +498,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "layout-rs"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1164ef87cb9607c2d887216eca79f0fc92895affe1789bba805dd38d829584e0"
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -525,9 +540,11 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 name = "mermaid"
 version = "0.1.0"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "dyn-clone",
  "kurbo",
+ "layout-rs",
  "nom",
  "nom_locate",
  "once_cell",
@@ -535,6 +552,7 @@ dependencies = [
  "piet",
  "piet-common",
  "piet-svg",
+ "regex",
  "thiserror",
  "tinyvec",
 ]
@@ -550,6 +568,15 @@ name = "miniz_oxide"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96590ba8f175222643a85693f33d26e9c8a015f599c216509b1a6894af675d34"
+dependencies = [
+ "adler",
+]
+
+[[package]]
+name = "miniz_oxide"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b275950c28b37e794e8c55d88aeb5e139d0ce23fdbbeda68f8d7174abdf9e8fa"
 dependencies = [
  "adler",
 ]
@@ -705,6 +732,7 @@ dependencies = [
 [[package]]
 name = "piet"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "image",
  "kurbo",
@@ -714,6 +742,7 @@ dependencies = [
 [[package]]
 name = "piet-cairo"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "cairo-rs",
  "pango",
@@ -726,6 +755,7 @@ dependencies = [
 [[package]]
 name = "piet-common"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "cairo-rs",
  "cairo-sys-rs",
@@ -744,6 +774,7 @@ dependencies = [
 [[package]]
 name = "piet-coregraphics"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "associative-cache",
  "core-foundation",
@@ -757,6 +788,7 @@ dependencies = [
 [[package]]
 name = "piet-direct2d"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "associative-cache",
  "dwrote",
@@ -769,6 +801,7 @@ dependencies = [
 [[package]]
 name = "piet-svg"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "base64",
  "font-kit",
@@ -781,6 +814,7 @@ dependencies = [
 [[package]]
 name = "piet-web"
 version = "0.5.0"
+source = "git+https://github.com/linebender/piet#5c505b083675c686c2cee5ffc4c4a1cd24fedf9b"
 dependencies = [
  "js-sys",
  "piet",
@@ -810,14 +844,14 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "png"
-version = "0.17.6"
+version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f0e7f4c94ec26ff209cee506314212639d6c91b80afb82984819fafce9df01c"
+checksum = "5d708eaf860a19b19ce538740d2b4bdeeb8337fa53f7738455e706623ad5c638"
 dependencies = [
  "bitflags",
  "crc32fast",
  "flate2",
- "miniz_oxide",
+ "miniz_oxide 0.6.2",
 ]
 
 [[package]]
@@ -892,6 +926,23 @@ dependencies = [
  "redox_syscall",
  "thiserror",
 ]
+
+[[package]]
+name = "regex"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c4eb3267174b8c6c2f654116623910a0fef09c4753f8dd83db29c48a0df988b"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "rustc_version"

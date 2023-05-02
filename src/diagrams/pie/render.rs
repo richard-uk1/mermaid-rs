@@ -17,17 +17,18 @@ pub fn render<RC: RenderContext>(
     ctx: &mut RC,
 ) -> Result<(), piet::Error> {
     // build text layouts
-    let title = chart
-        .title
-        .map(|title| {
-            let title: Arc<str> = title.into();
+    let title_layout = if chart.title.is_empty() {
+        None
+    } else {
+        let title: Arc<str> = chart.title.into();
 
+        Some(
             ctx.text()
                 .new_text_layout(title)
                 .apply_style(&style.title)
-                .build()
-        })
-        .transpose()?;
+                .build()?,
+        )
+    };
     let legend = Legend::build(chart, style, ctx)?;
 
     // build brushes
@@ -42,7 +43,7 @@ pub fn render<RC: RenderContext>(
     ctx.clear(None, style.background_color);
 
     // draw title
-    if let Some(ref layout) = title {
+    if let Some(ref layout) = title_layout {
         let size = layout.size();
         let title_tl = Point {
             x: PIE_RADIUS - size.width * 0.5 + 10.,
@@ -52,7 +53,7 @@ pub fn render<RC: RenderContext>(
     }
 
     // draw chart
-    let y_offset = match title {
+    let y_offset = match title_layout {
         Some(layout) => layout.size().height + 2. * 10.,
         None => 10.,
     };

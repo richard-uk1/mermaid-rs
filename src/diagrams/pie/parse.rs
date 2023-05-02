@@ -101,7 +101,7 @@ pub fn parse_pie(i: &str) -> IResult<Pie> {
     Ok((
         i,
         Pie {
-            title,
+            title: title.unwrap_or(""),
             show_data,
             data,
         },
